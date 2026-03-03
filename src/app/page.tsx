@@ -93,7 +93,7 @@ export default function Home() {
       setError(err.message || 'Failed to upload video. Is the backend running?');
       setAppState('upload');
     }
-  }, [pollStatus]);
+  }, [pollStatus, mockAi]);
 
   const handleReset = useCallback(() => {
     stopPolling();
