@@ -1,23 +1,15 @@
-# Node / Frontend
 node_modules/
 .next/
 out/
 build/
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-npm-debug.log*
+.env*
+!*.example
 
-# Python / Backend
 venv/
 __pycache__/
 *.pyc
-.env
 backend/uploads/*
 backend/outputs/*
 !backend/uploads/.gitkeep
 !backend/outputs/.gitkeep
-
-# OS
 .DS_Store
