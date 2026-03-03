@@ -16,6 +16,7 @@ export default function Home() {
   const [fileName, setFileName] = useState('');
   const [clips, setClips] = useState<Clip[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [mockAi, setMockAi] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -72,6 +73,7 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('mock_ai', mockAi ? 'true' : 'false');
 
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
@@ -151,9 +153,26 @@ export default function Home() {
                 <br />
                 <span className="text-[var(--color-foreground)]">In Seconds</span>
               </h1>
-              <p className="text-lg text-[var(--color-foreground)]/50 max-w-md mx-auto leading-relaxed">
+              <p className="text-lg text-[var(--color-foreground)]/50 max-w-md mx-auto leading-relaxed mb-6">
                 Upload your video and let AI discover the most engaging moments for TikTok, Shorts, and Reels.
               </p>
+
+              {/* Mock AI Toggle */}
+              <div className="flex items-center justify-center gap-3 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s', opacity: 0 }}>
+                <span className="text-sm font-medium text-[var(--color-foreground)]/70">Mock AI Mode</span>
+                <button
+                  type="button"
+                  onClick={() => setMockAi(!mockAi)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${mockAi ? 'bg-indigo-500' : 'bg-[var(--color-foreground)]/20'}`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${mockAi ? 'translate-x-6' : 'translate-x-1'}`}
+                  />
+                </button>
+                <span className="text-xs text-[var(--color-foreground)]/50" title="Skip OpenAI calls to save credits. Uses dummy text but still cuts video with FFmpeg.">
+                  (Save Credits)
+                </span>
+              </div>
             </div>
 
             {/* Error Alert */}

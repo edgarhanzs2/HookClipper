@@ -7,10 +7,12 @@ import os
 import uuid
 import asyncio
 import logging
+from typing import Optional
 from pathlib import Path
 from threading import Thread
+import time
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
@@ -69,6 +71,7 @@ def process_video(job_id: str, video_path: str):
     """
     try:
         job = jobs[job_id]
+        is_mock = job.get("mock_ai", False)
 
         # Step 1: Extract audio
         job["step"] = 1
@@ -79,15 +82,34 @@ def process_video(job_id: str, video_path: str):
         # Step 2: Transcribe
         job["step"] = 2
         job["status"] = "transcribing"
-        logger.info(f"[{job_id}] Step 2: Transcribing with Whisper...")
-        transcript = transcribe_audio(audio_path)
+        logger.info(f"[{job_id}] Step 2: Transcribing with Whisper (Mock: {is_mock})...")
+        if is_mock:
+            time.sleep(2)
+            transcript = {"text": "This is a mock transcript.", "segments": [], "duration": 10.0}
+        else:
+            transcript = transcribe_audio(audio_path)
+            
         job["transcript"] = transcript
 
         # Step 3: Detect hooks
         job["step"] = 3
         job["status"] = "detecting_hooks"
-        logger.info(f"[{job_id}] Step 3: Detecting hooks with GPT-4o...")
-        hooks = detect_hooks(transcript)
+        logger.info(f"[{job_id}] Step 3: Detecting hooks with GPT-4o (Mock: {is_mock})...")
+        if is_mock:
+            time.sleep(2)
+            hooks = [
+                {
+                    "title": "Mock Hook 1 (0-5s)",
+                    "start_time": 0.0,
+                    "end_time": 5.0,
+                    "duration": 5.0,
+                    "transcript_snippet": "This is a mocked 5-second hook to save API credits.",
+                    "reason": "Mock AI mode is enabled.",
+                    "score": 98
+                }
+            ]
+        else:
+            hooks = detect_hooks(transcript)
 
         # Step 4: Trim clips
         job["step"] = 4
@@ -122,7 +144,10 @@ async def root():
 
 
 @app.post("/api/upload")
-async def upload_video(file: UploadFile = File(...)):
+async def upload_video(
+    file: UploadFile = File(...),
+    mock_ai: str = Form("false")
+):
     """Upload a video file and start processing."""
     
     # Validate file type
@@ -157,6 +182,7 @@ async def upload_video(file: UploadFile = File(...)):
         "clips": [],
         "transcript": None,
         "error": None,
+        "mock_ai": mock_ai.lower() == "true",
     }
 
     # Start processing in background thread
