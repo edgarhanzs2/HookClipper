@@ -18,8 +18,10 @@ from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 
 from services.audio import extract_audio
-from services.transcription import transcribe_audio
-from services.hooks import detect_hooks
+from services.transcription import transcribe_audio as transcribe_openai
+from services.transcription_gemini import transcribe_audio as transcribe_gemini
+from services.hooks import detect_hooks as detect_hooks_openai
+from services.hooks_gemini import detect_hooks as detect_hooks_gemini
 from services.trimmer import trim_all_clips
 
 # Load environment variables
@@ -82,19 +84,22 @@ def process_video(job_id: str, video_path: str):
         # Step 2: Transcribe
         job["step"] = 2
         job["status"] = "transcribing"
-        logger.info(f"[{job_id}] Step 2: Transcribing with Whisper (Mock: {is_mock})...")
+        provider = job.get("provider", "openai")
+        logger.info(f"[{job_id}] Step 2: Transcribing (Mock: {is_mock}, Provider: {provider})...")
         if is_mock:
             time.sleep(2)
             transcript = {"text": "This is a mock transcript.", "segments": [], "duration": 10.0}
+        elif provider == "gemini":
+            transcript = transcribe_gemini(audio_path)
         else:
-            transcript = transcribe_audio(audio_path)
+            transcript = transcribe_openai(audio_path)
             
         job["transcript"] = transcript
 
         # Step 3: Detect hooks
         job["step"] = 3
         job["status"] = "detecting_hooks"
-        logger.info(f"[{job_id}] Step 3: Detecting hooks with GPT-4o (Mock: {is_mock})...")
+        logger.info(f"[{job_id}] Step 3: Detecting hooks (Mock: {is_mock}, Provider: {provider})...")
         if is_mock:
             time.sleep(2)
             hooks = [
@@ -108,8 +113,10 @@ def process_video(job_id: str, video_path: str):
                     "score": 98
                 }
             ]
+        elif provider == "gemini":
+            hooks = detect_hooks_gemini(transcript)
         else:
-            hooks = detect_hooks(transcript)
+            hooks = detect_hooks_openai(transcript)
 
         # Step 4: Trim clips
         job["step"] = 4
@@ -146,7 +153,8 @@ async def root():
 @app.post("/api/upload")
 async def upload_video(
     file: UploadFile = File(...),
-    mock_ai: str = Form("false")
+    mock_ai: str = Form("false"),
+    provider: str = Form("openai"),
 ):
     """Upload a video file and start processing."""
     
@@ -183,6 +191,7 @@ async def upload_video(
         "transcript": None,
         "error": None,
         "mock_ai": mock_ai.lower() == "true",
+        "provider": provider.lower(),
     }
 
     # Start processing in background thread
