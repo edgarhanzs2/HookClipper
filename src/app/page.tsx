@@ -17,6 +17,7 @@ export default function Home() {
   const [clips, setClips] = useState<Clip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [mockAi, setMockAi] = useState(false);
+  const [provider, setProvider] = useState<'openai' | 'gemini'>('openai');
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -74,6 +75,7 @@ export default function Home() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('mock_ai', mockAi ? 'true' : 'false');
+      formData.append('provider', provider);
 
       const res = await fetch(`${API_BASE}/api/upload`, {
         method: 'POST',
@@ -93,7 +95,7 @@ export default function Home() {
       setError(err.message || 'Failed to upload video. Is the backend running?');
       setAppState('upload');
     }
-  }, [pollStatus, mockAi]);
+  }, [pollStatus, mockAi, provider]);
 
   const handleReset = useCallback(() => {
     stopPolling();
@@ -157,21 +159,50 @@ export default function Home() {
                 Upload your video and let AI discover the most engaging moments for TikTok, Shorts, and Reels.
               </p>
 
-              {/* Mock AI Toggle */}
-              <div className="flex items-center justify-center gap-3 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s', opacity: 0 }}>
-                <span className="text-sm font-medium text-[var(--color-foreground)]/70">Mock AI Mode</span>
-                <button
-                  type="button"
-                  onClick={() => setMockAi(!mockAi)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${mockAi ? 'bg-indigo-500' : 'bg-[var(--color-foreground)]/20'}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${mockAi ? 'translate-x-6' : 'translate-x-1'}`}
-                  />
-                </button>
-                <span className="text-xs text-[var(--color-foreground)]/50" title="Skip OpenAI calls to save credits. Uses dummy text but still cuts video with FFmpeg.">
-                  (Save Credits)
-                </span>
+              {/* AI Provider + Mock AI Controls */}
+              <div className="flex flex-col items-center gap-4 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s', opacity: 0 }}>
+                {/* Provider Dropdown */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-[var(--color-foreground)]/70">AI Provider</span>
+                  <div className="relative">
+                    <select
+                      value={provider}
+                      onChange={(e) => setProvider(e.target.value as 'openai' | 'gemini')}
+                      className="appearance-none pl-4 pr-10 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 focus:outline-none"
+                      style={{
+                        background: 'rgba(139,92,246,0.15)',
+                        border: '1px solid rgba(139,92,246,0.3)',
+                        color: 'var(--color-primary-light)',
+                      }}
+                    >
+                      <option value="openai">🤖 GPT-4o</option>
+                      <option value="gemini">✨ Gemini 1.5 Flash</option>
+                    </select>
+                    {/* Custom chevron */}
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--color-primary-light)' }}>
+                        <polyline points="6 9 12 15 18 9" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mock AI Toggle */}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-[var(--color-foreground)]/70">Mock AI Mode</span>
+                  <button
+                    type="button"
+                    onClick={() => setMockAi(!mockAi)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none ${mockAi ? 'bg-indigo-500' : 'bg-[var(--color-foreground)]/20'}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 ${mockAi ? 'translate-x-6' : 'translate-x-1'}`}
+                    />
+                  </button>
+                  <span className="text-xs text-[var(--color-foreground)]/50" title="Skip API calls to save credits.">
+                    (Save Credits)
+                  </span>
+                </div>
               </div>
             </div>
 
