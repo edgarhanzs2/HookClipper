@@ -20,8 +20,10 @@ from dotenv import load_dotenv
 from services.audio import extract_audio
 from services.transcription import transcribe_audio as transcribe_openai
 from services.transcription_gemini import transcribe_audio as transcribe_gemini
+from services.transcription_ollama import transcribe_audio as transcribe_ollama
 from services.hooks import detect_hooks as detect_hooks_openai
 from services.hooks_gemini import detect_hooks as detect_hooks_gemini
+from services.hooks_ollama import detect_hooks as detect_hooks_ollama
 from services.trimmer import trim_all_clips
 
 # Load environment variables
@@ -91,6 +93,8 @@ def process_video(job_id: str, video_path: str):
             transcript = {"text": "This is a mock transcript.", "segments": [], "duration": 10.0}
         elif provider == "gemini":
             transcript = transcribe_gemini(audio_path)
+        elif provider == "ollama":
+            transcript = transcribe_ollama(audio_path)
         else:
             transcript = transcribe_openai(audio_path)
             
@@ -104,17 +108,19 @@ def process_video(job_id: str, video_path: str):
             time.sleep(2)
             hooks = [
                 {
-                    "title": "Mock Hook 1 (0-5s)",
+                    "title": "Mock Hook 1",
                     "start_time": 0.0,
-                    "end_time": 5.0,
-                    "duration": 5.0,
-                    "transcript_snippet": "This is a mocked 5-second hook to save API credits.",
+                    "end_time": 60.0,
+                    "duration": 60.0,
+                    "transcript_snippet": "This is a mocked 60-second hook to save API credits.",
                     "reason": "Mock AI mode is enabled.",
                     "score": 98
                 }
             ]
         elif provider == "gemini":
             hooks = detect_hooks_gemini(transcript)
+        elif provider == "ollama":
+            hooks = detect_hooks_ollama(transcript)
         else:
             hooks = detect_hooks_openai(transcript)
 

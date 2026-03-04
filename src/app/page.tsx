@@ -17,7 +17,7 @@ export default function Home() {
   const [clips, setClips] = useState<Clip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [mockAi, setMockAi] = useState(false);
-  const [provider, setProvider] = useState<'openai' | 'gemini'>('openai');
+  const [provider, setProvider] = useState<'openai' | 'gemini' | 'ollama'>('openai');
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -167,7 +167,7 @@ export default function Home() {
                   <div className="relative">
                     <select
                       value={provider}
-                      onChange={(e) => setProvider(e.target.value as 'openai' | 'gemini')}
+                      onChange={(e) => setProvider(e.target.value as 'openai' | 'gemini' | 'ollama')}
                       className="appearance-none pl-4 pr-10 py-2 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 focus:outline-none"
                       style={{
                         background: 'rgba(139,92,246,0.15)',
@@ -177,6 +177,7 @@ export default function Home() {
                     >
                       <option value="openai">🤖 GPT-4o</option>
                       <option value="gemini">✨ Gemini 1.5 Flash</option>
+                      <option value="ollama">🦙 Local AI (Ollama)</option>
                     </select>
                     {/* Custom chevron */}
                     <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
@@ -223,7 +224,7 @@ export default function Home() {
             {/* Features Row */}
             <div className="mt-12 grid grid-cols-3 gap-4 animate-fade-in-up" style={{ animationDelay: '0.6s', opacity: 0 }}>
               {[
-                { icon: '🧠', label: 'AI Hook Detection', desc: 'GPT-4o finds the best moments' },
+                { icon: '🧠', label: 'AI Hook Detection', desc: 'AI finds the best moments' },
                 { icon: '⚡', label: 'Lightning Fast', desc: 'Results in under 2 minutes' },
                 { icon: '📥', label: 'Instant Download', desc: 'Ready-to-post MP4 clips' },
               ].map((feat, i) => (

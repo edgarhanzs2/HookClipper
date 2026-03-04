@@ -100,14 +100,18 @@ def detect_hooks(transcript_data: dict) -> list:
 
     raw = response.text.strip()
 
-    # Strip markdown code fences if present
-    raw = re.sub(r"^```(?:json)?\s*", "", raw)
-    raw = re.sub(r"\s*```$", "", raw)
+    # Strip markdown code fences if present (multiline)
+    raw = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.MULTILINE)
+    raw = re.sub(r"\s*```\s*$", "", raw, flags=re.MULTILINE)
+
+    # Extract JSON array via regex to skip any stray leading text
+    array_match = re.search(r"\[.*\]", raw, flags=re.DOTALL)
+    json_str = array_match.group(0) if array_match else raw
 
     logger.info(f"[Gemini] Response received ({len(raw)} chars)")
 
     try:
-        parsed = json.loads(raw)
+        parsed = json.loads(json_str)
         if isinstance(parsed, list):
             hooks = parsed
         elif isinstance(parsed, dict):
@@ -129,7 +133,7 @@ def detect_hooks(transcript_data: dict) -> list:
         start = max(0.0, start)
         end = min(end, float(total_duration)) if total_duration > 0 else end
 
-        if end - start < 15:
+        if end - start < 10:  # was 15s, lowered to avoid over-filtering
             continue
         if end - start > 120:
             end = start + 90

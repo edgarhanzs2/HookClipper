@@ -109,11 +109,18 @@ def trim_all_clips(
             hook["clip_path"] = clip_path
             hook["clip_filename"] = clip_filename
         except Exception as e:
-            logger.error(f"Failed to trim clip {i + 1}: {e}")
+            logger.error(f"Failed to trim clip {i + 1} [{hook.get('title', '?')}]: {e}")
             hook["clip_path"] = None
             hook["clip_filename"] = None
             hook["error"] = str(e)
 
     successful = [h for h in hooks if h.get("clip_path")]
+    failed = [h for h in hooks if not h.get("clip_path")]
     logger.info(f"Successfully trimmed {len(successful)}/{len(hooks)} clips")
+    if failed:
+        for h in failed:
+            logger.warning(f"Clip failed to trim: '{h.get('title', '?')}' — {h.get('error', 'unknown error')}")
+    if len(successful) == 0 and len(hooks) > 0:
+        errors = "; ".join(h.get('error', 'unknown') for h in failed)
+        raise RuntimeError(f"All {len(hooks)} clip(s) failed to trim. Errors: {errors}")
     return hooks

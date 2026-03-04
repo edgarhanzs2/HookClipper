@@ -6,6 +6,7 @@ Analyzes transcript to find the most engaging, viral-worthy segments.
 import os
 import json
 import logging
+import re
 from openai import OpenAI
 
 logger = logging.getLogger(__name__)
@@ -90,21 +91,35 @@ Remember: each clip should be 30-90 seconds and use accurate timestamps from the
         ],
         temperature=0.7,
         max_tokens=2000,
-        response_format={"type": "json_object"},
+        # NOTE: Do NOT use response_format={"type": "json_object"} here.
+        # That mode forbids bare JSON arrays — GPT-4o wraps output in an object
+        # with an unpredictable key, causing silent empty results.
     )
 
     raw_content = response.choices[0].message.content.strip()
     logger.info(f"GPT-4o response received ({len(raw_content)} chars)")
 
-    # Parse the JSON response
+    # Strip markdown code fences if model wraps in ```json ... ```
+    raw_content = re.sub(r"^```(?:json)?\s*", "", raw_content, flags=re.MULTILINE)
+    raw_content = re.sub(r"\s*```\s*$", "", raw_content, flags=re.MULTILINE)
+
+    # Strategy 1: try to extract a JSON array directly via regex
+    hooks = None
+    array_match = re.search(r"\[.*\]", raw_content, flags=re.DOTALL)
+    json_str = array_match.group(0) if array_match else raw_content
+
     try:
-        parsed = json.loads(raw_content)
-        # Handle both direct array and wrapped {"hooks": [...]} formats
+        parsed = json.loads(json_str)
         if isinstance(parsed, list):
             hooks = parsed
         elif isinstance(parsed, dict):
-            hooks = parsed.get("hooks", parsed.get("clips", parsed.get("results", [])))
-            if not isinstance(hooks, list):
+            # Handles wrapped format: {"hooks": [...]} with any key
+            for key in ("hooks", "clips", "results"):
+                if isinstance(parsed.get(key), list):
+                    hooks = parsed[key]
+                    break
+            if hooks is None:
+                # Last resort: treat the whole dict as a single hook
                 hooks = [parsed]
         else:
             hooks = []
@@ -123,8 +138,8 @@ Remember: each clip should be 30-90 seconds and use accurate timestamps from the
         start = max(0, start)
         end = min(end, total_duration) if total_duration > 0 else end
 
-        # Ensure minimum clip length of 15s
-        if end - start < 15:
+        # Ensure minimum clip length of 10s (was 15s — lowered to avoid over-filtering)
+        if end - start < 10:
             continue
 
         # Ensure maximum clip length of 120s
