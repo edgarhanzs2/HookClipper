@@ -5,13 +5,16 @@ import BlobBackground from './components/BlobBackground';
 import DropZone from './components/DropZone';
 import ProcessingView from './components/ProcessingView';
 import ClipCard, { Clip } from './components/ClipCard';
+import YouTubeInput from './components/YouTubeInput';
 
 type AppState = 'upload' | 'processing' | 'results';
+type InputMode = 'file' | 'youtube';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('upload');
+  const [inputMode, setInputMode] = useState<InputMode>('file');
   const [currentStep, setCurrentStep] = useState(0);
   const [fileName, setFileName] = useState('');
   const [clips, setClips] = useState<Clip[]>([]);
@@ -19,6 +22,7 @@ export default function Home() {
   const [mockAi, setMockAi] = useState(false);
   const [provider, setProvider] = useState<'openai' | 'gemini' | 'ollama'>('openai');
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -50,6 +54,9 @@ export default function Home() {
             duration: clip.duration,
             score: clip.score,
             downloadUrl: `${API_BASE}${clip.download_url}`,
+            startTimeSec: clip.start_time_sec,
+            endTimeSec: clip.end_time_sec,
+            jobId: jobId,
           }));
 
           setClips(formattedClips);
@@ -88,11 +95,44 @@ export default function Home() {
       }
 
       const data = await res.json();
-      // Start polling for status
+      setCurrentJobId(data.job_id);
       pollStatus(data.job_id);
     } catch (err: any) {
       console.error('Upload error:', err);
       setError(err.message || 'Failed to upload video. Is the backend running?');
+      setAppState('upload');
+    }
+  }, [pollStatus, mockAi, provider]);
+
+  const handleYouTubeSubmit = useCallback(async (url: string) => {
+    setFileName(url);
+    setAppState('processing');
+    setCurrentStep(0);
+    setError(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/ingest-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url,
+          mock_ai: mockAi ? 'true' : 'false',
+          provider,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || 'URL ingestion failed');
+      }
+
+      const data = await res.json();
+      setFileName(data.filename || url);
+      setCurrentJobId(data.job_id);
+      pollStatus(data.job_id);
+    } catch (err: any) {
+      console.error('URL ingestion error:', err);
+      setError(err.message || 'Failed to process YouTube URL. Is the backend running?');
       setAppState('upload');
     }
   }, [pollStatus, mockAi, provider]);
@@ -104,6 +144,7 @@ export default function Home() {
     setFileName('');
     setClips([]);
     setError(null);
+    setCurrentJobId(null);
   }, [stopPolling]);
 
   return (
@@ -129,10 +170,10 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs px-3 py-1.5 rounded-full font-semibold" style={{
-              background: 'rgba(139,92,246,0.15)',
-              color: 'var(--color-primary-light)',
+              background: 'rgba(6,182,212,0.15)',
+              color: 'var(--color-accent)',
             }}>
-              Phase 1 · MVP
+              Phase 2 · Formatting
             </span>
           </div>
         </nav>
@@ -144,7 +185,7 @@ export default function Home() {
         {appState === 'upload' && (
           <div className="w-full max-w-2xl mx-auto">
             {/* Hero Text */}
-            <div className="text-center mb-12 animate-fade-in-up">
+            <div className="text-center mb-8 animate-fade-in-up">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass text-xs font-medium text-[var(--color-foreground)]/60 mb-6">
                 <span className="text-base">⚡</span>
                 AI-Powered Hook Detection
@@ -156,7 +197,7 @@ export default function Home() {
                 <span className="text-[var(--color-foreground)]">In Seconds</span>
               </h1>
               <p className="text-lg text-[var(--color-foreground)]/50 max-w-md mx-auto leading-relaxed mb-6">
-                Upload your video and let AI discover the most engaging moments for TikTok, Shorts, and Reels.
+                Upload your video or paste a YouTube link — AI discovers the most engaging moments for TikTok, Shorts, and Reels.
               </p>
 
               {/* AI Provider + Mock AI Controls */}
@@ -179,7 +220,6 @@ export default function Home() {
                       <option value="gemini">✨ Gemini 1.5 Flash</option>
                       <option value="ollama">🦙 Local AI (Ollama)</option>
                     </select>
-                    {/* Custom chevron */}
                     <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ color: 'var(--color-primary-light)' }}>
                         <polyline points="6 9 12 15 18 9" strokeLinecap="round" strokeLinejoin="round" />
@@ -218,15 +258,59 @@ export default function Home() {
               </div>
             )}
 
-            {/* Drop Zone */}
-            <DropZone onFileSelected={handleFileSelected} />
+            {/* Input Mode Tabs */}
+            <div className="flex items-center justify-center gap-1 mb-6 animate-fade-in-up" style={{ animationDelay: '0.3s', opacity: 0 }}>
+              <button
+                onClick={() => setInputMode('file')}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${inputMode === 'file' ? 'text-white' : 'text-[var(--color-foreground)]/50 hover:text-[var(--color-foreground)]/80'
+                  }`}
+                style={{
+                  background: inputMode === 'file'
+                    ? 'linear-gradient(135deg, var(--color-primary), var(--color-primary-dark))'
+                    : 'rgba(255,255,255,0.05)',
+                  boxShadow: inputMode === 'file' ? '0 4px 15px rgba(139,92,246,0.3)' : 'none',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" strokeLinecap="round" strokeLinejoin="round" />
+                  <polyline points="17 8 12 3 7 8" strokeLinecap="round" strokeLinejoin="round" />
+                  <line x1="12" y1="3" x2="12" y2="15" strokeLinecap="round" />
+                </svg>
+                Upload File
+              </button>
+              <button
+                onClick={() => setInputMode('youtube')}
+                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${inputMode === 'youtube' ? 'text-white' : 'text-[var(--color-foreground)]/50 hover:text-[var(--color-foreground)]/80'
+                  }`}
+                style={{
+                  background: inputMode === 'youtube'
+                    ? 'linear-gradient(135deg, #EF4444, #DC2626)'
+                    : 'rgba(255,255,255,0.05)',
+                  boxShadow: inputMode === 'youtube' ? '0 4px 15px rgba(239,68,68,0.3)' : 'none',
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                </svg>
+                YouTube URL
+              </button>
+            </div>
+
+            {/* Input Area */}
+            <div className="animate-fade-in-up" style={{ animationDelay: '0.4s', opacity: 0 }}>
+              {inputMode === 'file' ? (
+                <DropZone onFileSelected={handleFileSelected} />
+              ) : (
+                <YouTubeInput onSubmit={handleYouTubeSubmit} />
+              )}
+            </div>
 
             {/* Features Row */}
             <div className="mt-12 grid grid-cols-3 gap-4 animate-fade-in-up" style={{ animationDelay: '0.6s', opacity: 0 }}>
               {[
                 { icon: '🧠', label: 'AI Hook Detection', desc: 'AI finds the best moments' },
-                { icon: '⚡', label: 'Lightning Fast', desc: 'Results in under 2 minutes' },
-                { icon: '📥', label: 'Instant Download', desc: 'Ready-to-post MP4 clips' },
+                { icon: '📱', label: 'Vertical Clips', desc: '9:16 with face tracking' },
+                { icon: '💬', label: 'Auto Subtitles', desc: 'Animated subtitle styles' },
               ].map((feat, i) => (
                 <div key={i} className="glass rounded-xl p-4 text-center transition-all duration-300 hover:scale-105">
                   <span className="text-2xl block mb-2">{feat.icon}</span>
@@ -264,6 +348,9 @@ export default function Home() {
               <p className="text-[var(--color-foreground)]/50 text-sm">
                 From <span className="font-semibold text-[var(--color-foreground)]/70">{fileName}</span>
               </p>
+              <p className="text-xs text-[var(--color-foreground)]/30 mt-2">
+                Use the 📱 9:16 button on any clip to render vertical video with subtitles
+              </p>
             </div>
 
             {/* Clip Grid */}
@@ -298,7 +385,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 py-6 text-center">
         <p className="text-xs text-[var(--color-foreground)]/30">
-          Hook Clipper · AI-Powered Content Repurposing · Phase 1 MVP
+          Hook Clipper · AI-Powered Content Repurposing · Phase 2
         </p>
       </footer>
     </main>
