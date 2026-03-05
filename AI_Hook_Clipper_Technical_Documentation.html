@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Hook Clipper — Technical Documentation</title>
+    <meta name="description" content="Technical documentation for AI Hook Clipper v2.0 — system architecture, API reference, service modules, and deployment guide.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #111128;
+            --bg-card: rgba(30, 30, 60, 0.6);
+            --bg-code: rgba(15, 15, 35, 0.8);
+            --text-primary: #e8e8f0;
+            --text-secondary: #a0a0c0;
+            --text-muted: #6a6a90;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --accent-glow: rgba(108, 92, 231, 0.3);
+            --border: rgba(108, 92, 231, 0.15);
+            --border-strong: rgba(108, 92, 231, 0.35);
+            --success: #00cec9;
+            --warning: #fdcb6e;
+            --danger: #e17055;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 32px 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 0 24px 28px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo h1 {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-logo span {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .sidebar nav a {
+            display: block;
+            padding: 9px 24px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 400;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar nav a:hover,
+        .sidebar nav a.active {
+            color: var(--accent-light);
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+        }
+
+        .sidebar nav a.sub { padding-left: 40px; font-size: 12px; color: var(--text-muted); }
+
+        /* ── Main Content ── */
+        .main { margin-left: 280px; padding: 48px 64px 96px; max-width: 960px; }
+
+        /* ── Hero ── */
+        .hero {
+            text-align: center;
+            padding: 80px 0 60px;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, var(--accent-light) 50%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .hero .subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .hero .version {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 6px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── Section ── */
+        section { margin-bottom: 56px; scroll-margin-top: 32px; }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-strong);
+        }
+
+        h3 {
+            font-size: 19px;
+            font-weight: 600;
+            color: var(--accent-light);
+            margin: 28px 0 12px;
+        }
+
+        h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 20px 0 8px;
+        }
+
+        p { margin-bottom: 14px; color: var(--text-secondary); }
+
+        ul, ol { margin: 0 0 16px 24px; color: var(--text-secondary); }
+        li { margin-bottom: 6px; }
+        li::marker { color: var(--accent); }
+
+        strong { color: var(--text-primary); font-weight: 600; }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .card h4 { margin-top: 0; }
+
+        /* ── Tables ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 24px;
+            font-size: 13px;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--accent), #5a4bd1);
+            color: #fff;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+        th:last-child { border-radius: 0 var(--radius-sm) 0 0; }
+
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        tr:nth-child(even) td { background: rgba(108, 92, 231, 0.04); }
+        tr:hover td { background: rgba(108, 92, 231, 0.08); }
+
+        /* ── Code ── */
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: var(--accent-light);
+            border: 1px solid var(--border);
+        }
+
+        pre {
+            background: var(--bg-code);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 20px 24px;
+            margin: 12px 0 20px;
+            overflow-x: auto;
+            position: relative;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        pre .comment { color: var(--text-muted); }
+
+        /* ── Badges ── */
+        .method-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .method-badge.get { background: rgba(0, 206, 201, 0.15); color: var(--success); border: 1px solid rgba(0, 206, 201, 0.3); }
+        .method-badge.post { background: rgba(108, 92, 231, 0.15); color: var(--accent-light); border: 1px solid rgba(108, 92, 231, 0.3); }
+
+        .endpoint-path {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .endpoint-block {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 20px;
+        }
+
+        .endpoint-block p { margin-bottom: 8px; }
+
+        /* ── Flow Steps ── */
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .flow-step .num {
+            flex-shrink: 0;
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, var(--accent), #5a4bd1);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .flow-step .content { padding-top: 4px; }
+
+        /* ── Pipeline Steps ── */
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 16px 0 24px;
+        }
+
+        .pipeline-step {
+            flex: 1;
+            min-width: 140px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            text-align: center;
+            position: relative;
+        }
+
+        .pipeline-step .step-num {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--accent);
+        }
+
+        .pipeline-step .step-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .pipeline-step .step-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* ── Module Cards ── */
+        .module-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .module-card h4 {
+            margin-top: 0;
+            color: var(--accent-light);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+        }
+
+        .module-card .func {
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: var(--bg-code);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .module-card .func code {
+            display: block;
+            border: none;
+            background: none;
+            padding: 0;
+            color: var(--success);
+            font-size: 12.5px;
+            margin-bottom: 4px;
+        }
+
+        .module-card .func span {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; padding: 32px 24px; }
+        }
+
+        /* ── Back to Top ── */
+        .back-top {
+            position: fixed;
+            bottom: 28px; right: 28px;
+            width: 44px; height: 44px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transition: transform 0.2s;
+            z-index: 200;
+        }
+        .back-top:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <h1>🎬 Hook Clipper</h1>
+        <span>Technical Documentation</span>
+    </div>
+    <nav>
+        <a href="#overview">1. System Overview</a>
+        <a href="#architecture">2. Architecture</a>
+        <a href="#tech-stack">3. Technology Stack</a>
+        <a href="#api">4. API Reference</a>
+        <a href="#api-upload" class="sub">POST /upload</a>
+        <a href="#api-ingest" class="sub">POST /ingest</a>
+        <a href="#api-status" class="sub">GET /status/{job_id}</a>
+        <a href="#api-results" class="sub">GET /results/{job_id}</a>
+        <a href="#api-retrim" class="sub">POST /retrim</a>
+        <a href="#api-vertical" class="sub">POST /render-vertical</a>
+        <a href="#api-download" class="sub">GET /download</a>
+        <a href="#services">5. Service Modules</a>
+        <a href="#celery">6. Celery Processing</a>
+        <a href="#frontend">7. Frontend Components</a>
+        <a href="#config">8. Configuration</a>
+        <a href="#setup">9. Installation & Setup</a>
+        <a href="#deployment">10. Deployment Guide</a>
+    </nav>
+</aside>
+
+<main class="main">
+
+    <!-- Hero -->
+    <div class="hero">
+        <h1>AI Hook Clipper</h1>
+        <p class="subtitle">Technical Documentation</p>
+        <div class="version">v2.0 · March 2026</div>
+    </div>
+
+    <!-- 1. System Overview -->
+    <section id="overview">
+        <h2>1. System Overview</h2>
+        <p>AI Hook Clipper is a full-stack web application that uses artificial intelligence to automatically identify the most engaging <strong>"hook"</strong> moments in video content and generate short-form clips optimized for social media platforms such as TikTok, Instagram Reels, and YouTube Shorts.</p>
+        <p>The application supports multiple AI providers (OpenAI GPT-4o, Google Gemini 1.5 Flash, and local Ollama models) for transcription and hook detection. It features asynchronous job processing, YouTube URL ingestion, intelligent vertical cropping with face tracking, and dynamic subtitle generation.</p>
+
+        <h3>Key Capabilities</h3>
+        <ul>
+            <li>Video upload and YouTube URL ingestion</li>
+            <li>AI-powered audio transcription (OpenAI Whisper, Gemini, mlx-whisper)</li>
+            <li>AI-powered hook/viral moment detection (GPT-4o, Gemini, Ollama)</li>
+            <li>Automatic clip trimming with FFmpeg</li>
+            <li>9:16 vertical video cropping with face tracking via MediaPipe</li>
+            <li>Dynamic subtitle generation with multiple styles (Hormozi, Word Pop, Classic)</li>
+            <li>Asynchronous task processing with Celery and Redis</li>
+            <li>Re-trimming clips with custom timestamps</li>
+            <li>Mock AI mode for development and testing</li>
+        </ul>
+    </section>
+
+    <!-- 2. Architecture -->
+    <section id="architecture">
+        <h2>2. Architecture</h2>
+        <p>AI Hook Clipper follows a decoupled client-server architecture with an asynchronous processing layer.</p>
+
+        <h3>System Layers</h3>
+        <div class="card">
+            <h4>🖥️ Frontend — Next.js 14</h4>
+            <p>React-based single-page application providing upload UI, YouTube URL input, real-time progress tracking, clip preview, timeline editing, and download functionality.</p>
+        </div>
+        <div class="card">
+            <h4>⚡ Backend API — FastAPI</h4>
+            <p>RESTful API server handling HTTP requests, file management, job orchestration, and serving processed clips.</p>
+        </div>
+        <div class="card">
+            <h4>🔄 Worker Layer — Celery + Redis</h4>
+            <p>Asynchronous task queue processing the full video pipeline: audio extraction → transcription → hook detection → clip trimming.</p>
+        </div>
+
+        <h3>Data Flow</h3>
+        <div class="flow-step"><div class="num">1</div><div class="content"><p>User uploads a video file or submits a YouTube URL via the frontend.</p></div></div>
+        <div class="flow-step"><div class="num">2</div><div class="content"><p>Frontend sends the request to the FastAPI backend.</p></div></div>
+        <div class="flow-step"><div class="num">3</div><div class="content"><p>Backend saves the file (or downloads from YouTube) and dispatches a Celery task.</p></div></div>
+        <div class="flow-step"><div class="num">4</div><div class="content"><p>Celery worker processes the video: Extract audio → Transcribe → Detect hooks → Trim clips.</p></div></div>
+        <div class="flow-step"><div class="num">5</div><div class="content"><p>Frontend polls the job status endpoint until processing completes.</p></div></div>
+        <div class="flow-step"><div class="num">6</div><div class="content"><p>User previews clips, optionally renders vertical (9:16) versions with subtitles.</p></div></div>
+        <div class="flow-step"><div class="num">7</div><div class="content"><p>User downloads individual clips.</p></div></div>
+    </section>
+
+    <!-- 3. Technology Stack -->
+    <section id="tech-stack">
+        <h2>3. Technology Stack</h2>
+        <table>
+            <thead>
+                <tr><th>Category</th><th>Technology</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Frontend Framework</td><td>Next.js 14 (React 18)</td><td>Single-page application</td></tr>
+                <tr><td>Frontend Language</td><td>TypeScript / TSX</td><td>Type-safe component development</td></tr>
+                <tr><td>Styling</td><td>CSS (globals.css)</td><td>Custom design system</td></tr>
+                <tr><td>Backend Framework</td><td>FastAPI 0.115</td><td>REST API server</td></tr>
+                <tr><td>Task Queue</td><td>Celery + Redis</td><td>Asynchronous job processing</td></tr>
+                <tr><td>Video Processing</td><td>FFmpeg</td><td>Audio extraction, trimming, cropping, subtitles</td></tr>
+                <tr><td>Face Detection</td><td>MediaPipe + OpenCV</td><td>Face tracking for vertical crop</td></tr>
+                <tr><td>Transcription</td><td>Whisper / Gemini / mlx-whisper</td><td>Speech-to-text</td></tr>
+                <tr><td>Hook Detection</td><td>GPT-4o / Gemini / Ollama</td><td>AI viral moment detection</td></tr>
+                <tr><td>Subtitles</td><td>ASS (SubStation Alpha)</td><td>Styled subtitle rendering</td></tr>
+                <tr><td>YouTube Download</td><td>yt-dlp</td><td>YouTube video ingestion</td></tr>
+                <tr><td>Python Version</td><td>3.13</td><td>Backend runtime</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- 4. API Reference -->
+    <section id="api">
+        <h2>4. Backend API Reference</h2>
+        <p>Base URL: <code>http://localhost:8000</code></p>
+
+        <!-- GET / -->
+        <div class="endpoint-block" id="api-root">
+            <p><span class="method-badge get">GET</span> <span class="endpoint-path">/</span></p>
+            <p>Health check. Returns API status and version.</p>
+            <pre><code>{ "status": "ok", "app": "AI Hook Clipper API", "version": "2.0.0" }</code></pre>
+        </div>
+
+        <!-- POST /upload -->
+        <div class="endpoint-block" id="api-upload">
+            <p><span class="method-badge post">POST</span> <span class="endpoint-path">/upload</span></p>
+            <p>Upload a video file and start async processing. Accepts multipart form data.</p>
+            <h4>Form Parameters</h4>
+            <table>
+                <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+                <tr><td><code>file</code></td><td>File</td><td>Yes</td><td>Video file (MP4, MOV, AVI, MKV, WebM)</td></tr>
+                <tr><td><code>mock_ai</code></td><td>string</td><td>No</td><td>"true" or "false" (default: "false")</td></tr>
+                <tr><td><code>provider</code></td><td>string</td><td>No</td><td>"openai", "gemini", or "ollama" (default: "openai")</td></tr>
+            </table>
+            <pre><code>{ "job_id": "uuid", "status": "processing", "message": "Video uploaded. Processing started." }</code></pre>
+        </div>
+
+        <!-- POST /ingest -->
+        <div class="endpoint-block" id="api-ingest">
+            <p><span class="method-badge post">POST</span> <span class="endpoint-path">/ingest</span></p>
+            <p>Download a YouTube video by URL and start async processing.</p>
+            <h4>Request Body (JSON)</h4>
+            <pre><code>{ "url": "https://youtube.com/watch?v=...", "mock_ai": "false", "provider": "openai" }</code></pre>
+            <h4>Response</h4>
+            <pre><code>{ "job_id": "uuid", "status": "processing", "message": "YouTube video downloaded. Processing started." }</code></pre>
+        </div>
+
+        <!-- GET /status -->
+        <div class="endpoint-block" id="api-status">
+            <p><span class="method-badge get">GET</span> <span class="endpoint-path">/status/{job_id}</span></p>
+            <p>Get the current processing status of a job. Returns step number and status label.</p>
+            <pre><code>{ "job_id": "...", "step": 2, "status": "transcribing" }</code></pre>
+        </div>
+
+        <!-- GET /results -->
+        <div class="endpoint-block" id="api-results">
+            <p><span class="method-badge get">GET</span> <span class="endpoint-path">/results/{job_id}</span></p>
+            <p>Get the processed clips for a completed job. Returns clip metadata including titles, timestamps, scores, and download URLs.</p>
+            <pre><code>{
+  "job_id": "...",
+  "status": "completed",
+  "clips": [
+    {
+      "title": "Viral Hook 1",
+      "start_time": 12.5, "end_time": 45.0,
+      "score": 95,
+      "download_url": "/download/job_id/1"
+    }
+  ]
+}</code></pre>
+        </div>
+
+        <!-- POST /retrim -->
+        <div class="endpoint-block" id="api-retrim">
+            <p><span class="method-badge post">POST</span> <span class="endpoint-path">/retrim/{job_id}/{clip_id}</span></p>
+            <p>Re-trim a specific clip with new custom start/end timestamps.</p>
+            <h4>Request Body</h4>
+            <pre><code>{ "start_time": 10.5, "end_time": 45.0 }</code></pre>
+        </div>
+
+        <!-- POST /render-vertical -->
+        <div class="endpoint-block" id="api-vertical">
+            <p><span class="method-badge post">POST</span> <span class="endpoint-path">/render-vertical/{job_id}/{clip_id}?style=hormozi</span></p>
+            <p>Render a 9:16 vertical version of a clip with face-tracked cropping and subtitle overlay.</p>
+            <h4>Query Parameter</h4>
+            <table>
+                <tr><th>Parameter</th><th>Options</th><th>Default</th></tr>
+                <tr><td><code>style</code></td><td>hormozi, word_pop, classic</td><td>hormozi</td></tr>
+            </table>
+        </div>
+
+        <!-- GET /download -->
+        <div class="endpoint-block" id="api-download">
+            <p><span class="method-badge get">GET</span> <span class="endpoint-path">/download/{job_id}/{clip_id}</span></p>
+            <p>Download a specific processed clip. Returns binary MP4 file.</p>
+            <p><span class="method-badge get">GET</span> <span class="endpoint-path">/download-vertical/{job_id}/{clip_id}</span></p>
+            <p>Download the rendered vertical (9:16) version of a clip.</p>
+        </div>
+    </section>
+
+    <!-- 5. Service Modules -->
+    <section id="services">
+        <h2>5. Service Modules</h2>
+        <p>All service modules are located in <code>backend/services/</code>. Each module handles a specific stage of the processing pipeline.</p>
+
+        <div class="module-card">
+            <h4>audio.py — Audio Extraction</h4>
+            <p>Extracts audio tracks from video files using FFmpeg for downstream transcription.</p>
+            <div class="func"><code>extract_audio(video_path, output_dir)</code><span>Extracts audio from a video file and saves as MP3. Uses FFmpeg with 5-minute timeout.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>transcription.py — OpenAI Transcription</h4>
+            <p>Transcribes audio using OpenAI's Whisper API.</p>
+            <div class="func"><code>transcribe_audio(audio_path)</code><span>Sends audio to OpenAI Whisper API and returns transcript with segments, timestamps, and full text.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>transcription_gemini.py — Gemini Transcription</h4>
+            <p>Transcribes audio using Google Gemini 1.5 Flash.</p>
+            <div class="func"><code>transcribe_audio(audio_path)</code><span>Uploads audio to Gemini and returns transcript with word-level timestamps.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>transcription_ollama.py — Local Transcription (mlx-whisper)</h4>
+            <p>Transcribes audio using Apple Silicon optimized mlx-whisper for fully offline processing.</p>
+            <div class="func"><code>transcribe_audio(audio_path)</code><span>Runs mlx-whisper locally. Model configurable via <code>WHISPER_MODEL</code> env var.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>hooks.py — OpenAI Hook Detection</h4>
+            <p>Uses GPT-4o to analyze transcripts and identify the most viral, engaging hook moments.</p>
+            <div class="func"><code>detect_hooks(transcript)</code><span>Sends transcript to GPT-4o; returns top 3-5 hooks with scores, timestamps, and reasoning.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>hooks_gemini.py — Gemini Hook Detection</h4>
+            <p>Uses Gemini 1.5 Flash for hook detection with the same prompt strategy.</p>
+            <div class="func"><code>detect_hooks(transcript)</code><span>Sends transcript to Gemini for viral moment detection.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>hooks_ollama.py — Ollama Hook Detection (Local)</h4>
+            <p>Uses local Ollama models (e.g., Llama 3.1) for fully offline hook detection with context window management.</p>
+            <div class="func"><code>detect_hooks(transcript)</code><span>Sends transcript to local Ollama with auto-truncation. Model configurable via <code>OLLAMA_MODEL</code>.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>trimmer.py — Video Trimming</h4>
+            <p>Handles all clip trimming, including the full vertical render pipeline.</p>
+            <div class="func"><code>trim_clip(video_path, start_time, end_time, output_path)</code><span>Trims a single clip from a video using FFmpeg with H.264/AAC codecs.</span></div>
+            <div class="func"><code>trim_all_clips(video_path, hooks, output_dir, job_id)</code><span>Iterates over all detected hooks and trims each into an individual clip file.</span></div>
+            <div class="func"><code>trim_and_render_vertical(video_path, start, end, face_data, sub_path, out)</code><span>Full pipeline: trim → crop 9:16 → burn subtitles in one FFmpeg pass.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>crop_engine.py — Vertical Cropping</h4>
+            <p>Crops landscape (16:9) video to portrait (9:16) format using face tracking coordinates.</p>
+            <div class="func"><code>crop_to_vertical(video_path, face_data, output_path, ...)</code><span>Crops using average face position for stable, centered framing.</span></div>
+            <div class="func"><code>center_crop_vertical(video_path, output_path, ...)</code><span>Fallback center crop when face tracking data is not available.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>face_tracker.py — Face Tracking</h4>
+            <p>Detects and tracks the dominant face using MediaPipe for intelligent vertical cropping.</p>
+            <div class="func"><code>track_faces(video_path, sample_every_n=5)</code><span>Runs face detection on sampled frames; returns smoothed coordinates (0-1) with moving-average filter.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>subtitle_engine.py — Subtitle Generation</h4>
+            <p>Generates Advanced SubStation Alpha (.ass) subtitle files with multiple visual styles.</p>
+            <div class="func"><code>generate_subtitles(transcript, style, output_path, clip_start, clip_end)</code><span>Creates .ass file from word-level transcript. Supports hormozi, word_pop, and classic styles.</span></div>
+        </div>
+
+        <div class="module-card">
+            <h4>downloader.py — YouTube Downloader</h4>
+            <p>Downloads videos from YouTube URLs using yt-dlp.</p>
+            <div class="func"><code>validate_url(url)</code><span>Validates against supported YouTube URL patterns.</span></div>
+            <div class="func"><code>get_video_info(url)</code><span>Fetches metadata (title, duration, uploader) without downloading.</span></div>
+            <div class="func"><code>download_youtube(url, output_dir)</code><span>Downloads the video at up to 720p as MP4.</span></div>
+        </div>
+    </section>
+
+    <!-- 6. Celery -->
+    <section id="celery">
+        <h2>6. Asynchronous Processing (Celery)</h2>
+        <p>Video processing is handled asynchronously using Celery with Redis as the message broker and result backend. The API returns immediately with a job ID while processing continues in the background.</p>
+
+        <h3>Configuration</h3>
+        <p>File: <code>backend/celery_app.py</code></p>
+        <pre><code>REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+celery = Celery("hook_clipper", broker=REDIS_URL, backend=REDIS_URL)</code></pre>
+
+        <h3>Pipeline Steps</h3>
+        <div class="pipeline">
+            <div class="pipeline-step"><div class="step-num">1</div><div class="step-label">Extract Audio</div><div class="step-desc">FFmpeg</div></div>
+            <div class="pipeline-step"><div class="step-num">2</div><div class="step-label">Transcribe</div><div class="step-desc">AI Provider</div></div>
+            <div class="pipeline-step"><div class="step-num">3</div><div class="step-label">Detect Hooks</div><div class="step-desc">AI Analysis</div></div>
+            <div class="pipeline-step"><div class="step-num">4</div><div class="step-label">Trim Clips</div><div class="step-desc">FFmpeg</div></div>
+            <div class="pipeline-step"><div class="step-num">5</div><div class="step-label">Complete</div><div class="step-desc">✅ Done</div></div>
+        </div>
+
+        <h3>Running the Worker</h3>
+        <pre><code><span class="comment"># macOS recommended (avoids fork safety issues):</span>
+celery -A celery_app.celery worker --loglevel=info --pool=solo
+
+<span class="comment"># Linux:</span>
+celery -A celery_app.celery worker --loglevel=info</code></pre>
+    </section>
+
+    <!-- 7. Frontend Components -->
+    <section id="frontend">
+        <h2>7. Frontend Components</h2>
+        <p>The frontend is built with Next.js 14 and TypeScript. All components are in <code>src/app/components/</code>.</p>
+
+        <table>
+            <thead><tr><th>Component</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>page.tsx</code></td><td>Main application page. Orchestrates upload → processing → results flow.</td></tr>
+                <tr><td><code>DropZone.tsx</code></td><td>Drag-and-drop file upload with visual feedback and file validation.</td></tr>
+                <tr><td><code>YouTubeInput.tsx</code></td><td>YouTube URL input with validation, loading states, and error feedback.</td></tr>
+                <tr><td><code>ProcessingView.tsx</code></td><td>Processing status display with animated step indicators.</td></tr>
+                <tr><td><code>ProgressSteps.tsx</code></td><td>5-step progress bar (Extract → Transcribe → Detect → Trim → Complete).</td></tr>
+                <tr><td><code>ClipCard.tsx</code></td><td>Clip result card with metadata, video preview, and download/render actions.</td></tr>
+                <tr><td><code>StylePickerModal.tsx</code></td><td>Modal for selecting subtitle style before vertical rendering.</td></tr>
+                <tr><td><code>TimelineEditor.tsx</code></td><td>Interactive timeline for adjusting clip start/end with drag handles.</td></tr>
+                <tr><td><code>BlobBackground.tsx</code></td><td>Animated floating gradient blobs for visual appeal.</td></tr>
+                <tr><td><code>WaveformAnimation.tsx</code></td><td>Audio waveform animation during the transcription step.</td></tr>
+                <tr><td><code>FunFacts.tsx</code></td><td>Rotating fun facts displayed during processing.</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- 8. Configuration -->
+    <section id="config">
+        <h2>8. Configuration & Environment Variables</h2>
+        <p>All configuration is managed through the <code>backend/.env</code> file.</p>
+
+        <table>
+            <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><code>OPENAI_API_KEY</code></td><td><em>(required)</em></td><td>OpenAI API key for Whisper and GPT-4o</td></tr>
+                <tr><td><code>GEMINI_API_KEY</code></td><td><em>(required for Gemini)</em></td><td>Google Gemini API key</td></tr>
+                <tr><td><code>OLLAMA_MODEL</code></td><td>llama3.1</td><td>Ollama model for local hook detection</td></tr>
+                <tr><td><code>WHISPER_MODEL</code></td><td>mlx-community/whisper-large-v3-turbo</td><td>mlx-whisper model for local transcription</td></tr>
+                <tr><td><code>OLLAMA_BASE_URL</code></td><td>http://localhost:11434</td><td>Ollama server URL</td></tr>
+                <tr><td><code>REDIS_URL</code></td><td>redis://localhost:6379/0</td><td>Redis connection for Celery</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    <!-- 9. Installation -->
+    <section id="setup">
+        <h2>9. Installation & Setup</h2>
+
+        <h3>Prerequisites</h3>
+        <ul>
+            <li>Python 3.13+</li>
+            <li>Node.js 18+ and npm</li>
+            <li>FFmpeg (<code>brew install ffmpeg</code>)</li>
+            <li>Redis server (<code>brew install redis && redis-server</code>)</li>
+            <li>yt-dlp (<code>pip install yt-dlp</code> or <code>brew install yt-dlp</code>)</li>
+            <li><em>(Optional)</em> Ollama for local AI — <a href="https://ollama.ai" style="color:var(--accent-light)">ollama.ai</a></li>
+        </ul>
+
+        <h3>Backend Setup</h3>
+        <pre><code>cd backend
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+<span class="comment"># Copy and configure environment variables</span>
+cp .env.example .env
+<span class="comment"># Edit .env with your API keys</span></code></pre>
+
+        <h3>Frontend Setup</h3>
+        <pre><code><span class="comment"># From project root</span>
+npm install
+npm run dev</code></pre>
+
+        <h3>Starting All Services</h3>
+        <pre><code><span class="comment"># Terminal 1: Redis</span>
+redis-server
+
+<span class="comment"># Terminal 2: Backend API</span>
+cd backend && source venv/bin/activate
+uvicorn main:app --reload --port 8000
+
+<span class="comment"># Terminal 3: Celery Worker</span>
+cd backend && source venv/bin/activate
+celery -A celery_app.celery worker --loglevel=info --pool=solo
+
+<span class="comment"># Terminal 4: Frontend</span>
+npm run dev</code></pre>
+    </section>
+
+    <!-- 10. Deployment -->
+    <section id="deployment">
+        <h2>10. Deployment Guide</h2>
+
+        <h3>Production Considerations</h3>
+        <ul>
+            <li>Use a production ASGI server (gunicorn with uvicorn workers) instead of <code>uvicorn --reload</code>.</li>
+            <li>Configure Celery with a proper pool (prefork or gevent) on Linux servers.</li>
+            <li>Set up Redis with persistence if job state needs to survive restarts.</li>
+            <li>Serve the Next.js frontend via a CDN or static hosting (Vercel, Netlify).</li>
+            <li>Store uploaded videos and output clips on cloud storage (S3, GCS) instead of local disk.</li>
+            <li>Set appropriate CORS origins for the production frontend URL.</li>
+            <li>Use environment-specific <code>.env</code> files and never commit API keys to version control.</li>
+            <li>Set up log aggregation and monitoring for the backend and Celery workers.</li>
+        </ul>
+
+        <h3>Recommended Architecture</h3>
+        <table>
+            <thead><tr><th>Component</th><th>Recommended Service</th></tr></thead>
+            <tbody>
+                <tr><td>Frontend</td><td>Vercel (automatic Next.js deployment)</td></tr>
+                <tr><td>Backend API</td><td>Docker on cloud VM or managed containers (AWS ECS, Cloud Run)</td></tr>
+                <tr><td>Celery Worker</td><td>Separate Docker container on a VM (GPU access for local AI)</td></tr>
+                <tr><td>Redis</td><td>Managed Redis (AWS ElastiCache, Redis Cloud)</td></tr>
+                <tr><td>Storage</td><td>Cloud object storage (S3, GCS) for videos and clips</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+</main>
+
+<button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+
+</body>
+</html>

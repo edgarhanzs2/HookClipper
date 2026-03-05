@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Hook Clipper — User Manual</title>
+    <meta name="description"
+        content="User manual for AI Hook Clipper v2.0 — learn how to upload videos, detect viral hooks, and create short-form clips.">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #111128;
+            --bg-card: rgba(30, 30, 60, 0.6);
+            --bg-code: rgba(15, 15, 35, 0.8);
+            --text-primary: #e8e8f0;
+            --text-secondary: #a0a0c0;
+            --text-muted: #6a6a90;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --accent-glow: rgba(108, 92, 231, 0.3);
+            --border: rgba(108, 92, 231, 0.15);
+            --border-strong: rgba(108, 92, 231, 0.35);
+            --success: #00cec9;
+            --warning: #fdcb6e;
+            --danger: #e17055;
+            --radius: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+            font-size: 15px;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 32px 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 0 24px 28px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-logo h1 {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .sidebar-logo span {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: block;
+            margin-top: 4px;
+        }
+
+        .sidebar nav a {
+            display: block;
+            padding: 9px 24px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 400;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .sidebar nav a:hover,
+        .sidebar nav a.active {
+            color: var(--accent-light);
+            background: var(--accent-glow);
+            border-left-color: var(--accent);
+        }
+
+        /* ── Main Content ── */
+        .main {
+            margin-left: 280px;
+            padding: 48px 64px 96px;
+            max-width: 960px;
+        }
+
+        /* ── Hero ── */
+        .hero {
+            text-align: center;
+            padding: 80px 0 60px;
+            position: relative;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff 0%, var(--accent-light) 50%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .hero .subtitle {
+            font-size: 20px;
+            color: var(--text-secondary);
+            font-weight: 300;
+        }
+
+        .hero .version {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 6px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── Sections ── */
+        section {
+            margin-bottom: 56px;
+            scroll-margin-top: 32px;
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border-strong);
+        }
+
+        h3 {
+            font-size: 19px;
+            font-weight: 600;
+            color: var(--accent-light);
+            margin: 28px 0 12px;
+        }
+
+        h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 20px 0 8px;
+        }
+
+        p {
+            margin-bottom: 14px;
+            color: var(--text-secondary);
+        }
+
+        ul,
+        ol {
+            margin: 0 0 16px 24px;
+            color: var(--text-secondary);
+        }
+
+        li {
+            margin-bottom: 6px;
+        }
+
+        li::marker {
+            color: var(--accent);
+        }
+
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        a {
+            color: var(--accent-light);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            background: var(--bg-code);
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: var(--accent-light);
+            border: 1px solid var(--border);
+        }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+            backdrop-filter: blur(12px);
+        }
+
+        .card h4 {
+            margin-top: 0;
+        }
+
+        /* ── Feature Cards Grid ── */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-strong);
+        }
+
+        .feature-card .icon {
+            font-size: 28px;
+            margin-bottom: 12px;
+        }
+
+        .feature-card h4 {
+            margin-top: 0;
+            font-size: 15px;
+        }
+
+        .feature-card p {
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+
+        /* ── Tables ── */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 24px;
+            font-size: 13px;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--accent), #5a4bd1);
+            color: #fff;
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        th:first-child {
+            border-radius: var(--radius-sm) 0 0 0;
+        }
+
+        th:last-child {
+            border-radius: 0 var(--radius-sm) 0 0;
+        }
+
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
+        }
+
+        tr:nth-child(even) td {
+            background: rgba(108, 92, 231, 0.04);
+        }
+
+        tr:hover td {
+            background: rgba(108, 92, 231, 0.08);
+        }
+
+        /* ── Steps ── */
+        .steps {
+            counter-reset: step-counter;
+            margin: 16px 0 24px;
+        }
+
+        .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+            counter-increment: step-counter;
+        }
+
+        .step .num {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #5a4bd1);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .step .content {
+            padding-top: 6px;
+            flex: 1;
+        }
+
+        .step .content h4 {
+            margin-top: 0;
+            margin-bottom: 4px;
+        }
+
+        .step .content p {
+            margin-bottom: 0;
+            font-size: 14px;
+        }
+
+        /* ── Pipeline ── */
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0 24px;
+            align-items: center;
+        }
+
+        .pipeline-step {
+            flex: 1;
+            min-width: 120px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px 12px;
+            text-align: center;
+        }
+
+        .pipeline-step .emoji {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .pipeline-step .label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .pipeline-step .desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .pipeline-arrow {
+            font-size: 18px;
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* ── Style Preview ── */
+        .style-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 16px 0 24px;
+        }
+
+        .style-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+        }
+
+        .style-card .preview {
+            background: #000;
+            border-radius: var(--radius-sm);
+            padding: 20px 12px;
+            margin-bottom: 12px;
+            font-size: 18px;
+            font-weight: 700;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .style-card.hormozi .preview {
+            color: #fff;
+        }
+
+        .style-card.hormozi .preview .highlight {
+            color: #FFD700;
+        }
+
+        .style-card.word-pop .preview {
+            color: #fff;
+            font-size: 24px;
+        }
+
+        .style-card.classic .preview {
+            color: #fff;
+            font-size: 15px;
+            background: linear-gradient(transparent 60%, rgba(0, 0, 0, 0.8));
+        }
+
+        .style-card h4 {
+            margin-top: 0;
+            color: var(--accent-light);
+        }
+
+        .style-card p {
+            font-size: 12px;
+            margin-bottom: 0;
+        }
+
+        /* ── Alert/Tip boxes ── */
+        .tip {
+            background: rgba(0, 206, 201, 0.08);
+            border: 1px solid rgba(0, 206, 201, 0.25);
+            border-left: 4px solid var(--success);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+
+        .tip .label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--success);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .tip p {
+            margin-bottom: 0;
+            font-size: 13px;
+        }
+
+        .warning {
+            background: rgba(253, 203, 110, 0.08);
+            border: 1px solid rgba(253, 203, 110, 0.25);
+            border-left: 4px solid var(--warning);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            padding: 16px 20px;
+            margin: 16px 0;
+        }
+
+        .warning .label {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--warning);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .warning p {
+            margin-bottom: 0;
+            font-size: 13px;
+        }
+
+        /* ── FAQ ── */
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .faq-q {
+            padding: 16px 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .faq-q:hover {
+            background: rgba(108, 92, 231, 0.06);
+        }
+
+        .faq-q .chevron {
+            font-size: 18px;
+            color: var(--accent);
+            transition: transform 0.3s;
+        }
+
+        .faq-a {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .faq-item.open .faq-a {
+            max-height: 300px;
+            padding: 0 20px 16px;
+        }
+
+        .faq-item.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        .faq-a p {
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        /* ── Troubleshoot Cards ── */
+        .trouble-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 12px;
+        }
+
+        .trouble-card .problem {
+            font-weight: 600;
+            color: var(--danger);
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .trouble-card .solution {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 32px 24px;
+            }
+
+            .style-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .pipeline {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .pipeline-arrow {
+                transform: rotate(90deg);
+                text-align: center;
+            }
+        }
+
+        .back-top {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 44px;
+            height: 44px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            transition: transform 0.2s;
+            z-index: 200;
+        }
+
+        .back-top:hover {
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <h1>🎬 Hook Clipper</h1>
+            <span>User Manual</span>
+        </div>
+        <nav>
+            <a href="#intro">1. Introduction</a>
+            <a href="#requirements">2. System Requirements</a>
+            <a href="#getting-started">3. Getting Started</a>
+            <a href="#upload">4. Uploading a Video</a>
+            <a href="#youtube">5. Using YouTube URLs</a>
+            <a href="#providers">6. AI Provider Selection</a>
+            <a href="#pipeline">7. Processing Pipeline</a>
+            <a href="#results">8. Viewing Results</a>
+            <a href="#customize">9. Customizing Clips</a>
+            <a href="#vertical">10. Rendering Vertical Videos</a>
+            <a href="#download">11. Downloading Clips</a>
+            <a href="#troubleshooting">12. Troubleshooting</a>
+            <a href="#faq">13. FAQ</a>
+        </nav>
+    </aside>
+
+    <main class="main">
+
+        <!-- Hero -->
+        <div class="hero">
+            <h1>AI Hook Clipper</h1>
+            <p class="subtitle">User Manual</p>
+            <div class="version">v2.0 · March 2026</div>
+        </div>
+
+        <!-- 1. Introduction -->
+        <section id="intro">
+            <h2>1. Introduction</h2>
+            <p>Welcome to <strong>AI Hook Clipper</strong>! This application uses cutting-edge artificial intelligence
+                to analyze your videos and automatically find the most engaging, viral-worthy moments — called
+                <strong>"hooks."</strong> It then generates short clips optimized for social media platforms like
+                TikTok, Instagram Reels, and YouTube Shorts.</p>
+            <p>With AI Hook Clipper, you can transform a long video into multiple shareable clips in just minutes,
+                complete with professional subtitles and vertical formatting.</p>
+
+            <h3>What You Can Do</h3>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">📤</div>
+                    <h4>Upload or Paste URL</h4>
+                    <p>Upload a video file or paste a YouTube URL to start processing.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🤖</div>
+                    <h4>AI Hook Detection</h4>
+                    <p>Let AI automatically detect the most viral moments in your video.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">✂️</div>
+                    <h4>Timeline Editing</h4>
+                    <p>Preview and adjust auto-generated clips with an interactive timeline editor.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📱</div>
+                    <h4>Vertical Format</h4>
+                    <p>Convert clips to 9:16 format with face-tracking and styled subtitles.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎨</div>
+                    <h4>Subtitle Styles</h4>
+                    <p>Choose from Hormozi, Word Pop, or Classic subtitle styles.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">⬇️</div>
+                    <h4>Download Clips</h4>
+                    <p>Download clips in landscape or vertical format as MP4.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. System Requirements -->
+        <section id="requirements">
+            <h2>2. System Requirements</h2>
+
+            <h3>For Users (Browser)</h3>
+            <p>AI Hook Clipper runs in your web browser. Any modern browser is supported:</p>
+            <ul>
+                <li>Google Chrome (recommended)</li>
+                <li>Mozilla Firefox</li>
+                <li>Microsoft Edge</li>
+                <li>Safari</li>
+            </ul>
+
+            <h3>For Self-Hosted Setup</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Requirement</th>
+                        <th>Minimum</th>
+                        <th>Recommended</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Operating System</td>
+                        <td>macOS 12+ / Linux</td>
+                        <td>macOS 14+ (Apple Silicon)</td>
+                    </tr>
+                    <tr>
+                        <td>Python</td>
+                        <td>3.11</td>
+                        <td>3.13</td>
+                    </tr>
+                    <tr>
+                        <td>Node.js</td>
+                        <td>18</td>
+                        <td>20+</td>
+                    </tr>
+                    <tr>
+                        <td>RAM</td>
+                        <td>4 GB</td>
+                        <td>8 GB+</td>
+                    </tr>
+                    <tr>
+                        <td>Disk Space</td>
+                        <td>2 GB free</td>
+                        <td>10 GB+ (for video files)</td>
+                    </tr>
+                    <tr>
+                        <td>FFmpeg</td>
+                        <td>4.0+</td>
+                        <td>Latest</td>
+                    </tr>
+                    <tr>
+                        <td>Redis</td>
+                        <td>6.0+</td>
+                        <td>Latest</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 3. Getting Started -->
+        <section id="getting-started">
+            <h2>3. Getting Started</h2>
+
+            <div class="steps">
+                <div class="step">
+                    <div class="num">1</div>
+                    <div class="content">
+                        <h4>Start the Application</h4>
+                        <p>Open your browser and navigate to the application URL (e.g.,
+                            <code>http://localhost:3000</code> for local development).</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="num">2</div>
+                    <div class="content">
+                        <h4>Choose Your Input Method</h4>
+                        <p>On the home page, choose between <strong>"Upload a Video"</strong> or <strong>"Paste YouTube
+                                URL."</strong></p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="num">3</div>
+                    <div class="content">
+                        <h4>Select an AI Provider</h4>
+                        <p>Choose your preferred AI provider from the dropdown: OpenAI (cloud), Gemini (cloud), or
+                            Ollama (local/offline).</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="num">4</div>
+                    <div class="content">
+                        <h4>Wait for Processing</h4>
+                        <p>The AI will analyze your video through a multi-step pipeline. Progress is shown in real-time
+                            with animations and fun facts.</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="num">5</div>
+                    <div class="content">
+                        <h4>Review and Download</h4>
+                        <p>Preview detected hooks, optionally render vertical versions with subtitles, and download your
+                            clips.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Uploading a Video -->
+        <section id="upload">
+            <h2>4. Uploading a Video</h2>
+
+            <h3>Using Drag and Drop</h3>
+            <ol>
+                <li>Open the application in your browser.</li>
+                <li>Drag your video file from your file manager onto the upload zone.</li>
+                <li>The upload zone will highlight in purple with a <strong>"Drop to upload"</strong> message.</li>
+                <li>Release the file to start the upload.</li>
+            </ol>
+
+            <h3>Using the File Browser</h3>
+            <ol>
+                <li>Click on the upload zone area.</li>
+                <li>A file browser dialog will appear.</li>
+                <li>Navigate to and select your video file.</li>
+                <li>Click <strong>"Open"</strong> to start the upload.</li>
+            </ol>
+
+            <h3>Supported Formats</h3>
+            <ul>
+                <li><strong>MP4</strong> (recommended)</li>
+                <li>MOV</li>
+                <li>AVI</li>
+                <li>MKV</li>
+                <li>WebM</li>
+            </ul>
+
+            <div class="tip">
+                <div class="label">💡 Tip</div>
+                <p>For best results, use MP4 files with H.264 encoding. Maximum recommended file size is 500 MB.</p>
+            </div>
+        </section>
+
+        <!-- 5. YouTube URLs -->
+        <section id="youtube">
+            <h2>5. Using YouTube URLs</h2>
+            <p>Instead of uploading a file, you can process any public YouTube video by pasting its URL.</p>
+
+            <h3>How to Use</h3>
+            <ol>
+                <li>Copy the URL of a YouTube video from your browser.</li>
+                <li>Switch to the <strong>"YouTube URL"</strong> tab on the home page.</li>
+                <li>Paste the URL into the input field.</li>
+                <li>Click <strong>"Process"</strong> to start downloading and analyzing.</li>
+            </ol>
+
+            <h3>Supported URL Formats</h3>
+            <ul>
+                <li><strong>Standard:</strong> <code>https://www.youtube.com/watch?v=VIDEO_ID</code></li>
+                <li><strong>Short:</strong> <code>https://youtu.be/VIDEO_ID</code></li>
+                <li><strong>Shorts:</strong> <code>https://www.youtube.com/shorts/VIDEO_ID</code></li>
+            </ul>
+
+            <div class="warning">
+                <div class="label">⚠️ Note</div>
+                <p>Videos are downloaded at 720p quality. Private or age-restricted videos cannot be downloaded.</p>
+            </div>
+        </section>
+
+        <!-- 6. AI Provider Selection -->
+        <section id="providers">
+            <h2>6. AI Provider Selection</h2>
+            <p>AI Hook Clipper supports three AI providers for transcription and hook detection:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Provider</th>
+                        <th>Speed</th>
+                        <th>Quality</th>
+                        <th>Cost</th>
+                        <th>Internet</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>OpenAI</strong> (GPT-4o + Whisper)</td>
+                        <td>⚡ Fast</td>
+                        <td>⭐⭐⭐ Excellent</td>
+                        <td>Pay-per-use</td>
+                        <td>Required</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gemini</strong> (1.5 Flash)</td>
+                        <td>⚡ Fast</td>
+                        <td>⭐⭐ Very Good</td>
+                        <td>Free tier available</td>
+                        <td>Required</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ollama</strong> (Local)</td>
+                        <td>🔄 Moderate</td>
+                        <td>⭐⭐ Good</td>
+                        <td>Free</td>
+                        <td>Not required</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Mock AI Mode</h3>
+            <p>For testing purposes, a <strong>Mock AI</strong> mode is available. When enabled, the application skips
+                actual AI processing and returns sample data. This is useful for testing the UI and pipeline without
+                consuming API credits.</p>
+
+            <div class="tip">
+                <div class="label">💡 Tip</div>
+                <p>Use Ollama if you want complete privacy — your videos never leave your machine.</p>
+            </div>
+        </section>
+
+        <!-- 7. Processing Pipeline -->
+        <section id="pipeline">
+            <h2>7. Processing Pipeline</h2>
+            <p>When you submit a video, the application processes it through 5 stages:</p>
+
+            <div class="pipeline">
+                <div class="pipeline-step">
+                    <div class="emoji">🎵</div>
+                    <div class="label">Extract Audio</div>
+                    <div class="desc">FFmpeg</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="emoji">📝</div>
+                    <div class="label">Transcribe</div>
+                    <div class="desc">AI Speech-to-Text</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="emoji">🎯</div>
+                    <div class="label">Detect Hooks</div>
+                    <div class="desc">AI Analysis</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="emoji">✂️</div>
+                    <div class="label">Trim Clips</div>
+                    <div class="desc">FFmpeg</div>
+                </div>
+                <div class="pipeline-arrow">→</div>
+                <div class="pipeline-step">
+                    <div class="emoji">✅</div>
+                    <div class="label">Complete</div>
+                    <div class="desc">Ready!</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h4>⏱ Processing Time</h4>
+                <p>The entire process typically takes <strong>1-5 minutes</strong> depending on video length and your
+                    selected AI provider. Fun facts and animations are displayed while you wait.</p>
+            </div>
+        </section>
+
+        <!-- 8. Viewing Results -->
+        <section id="results">
+            <h2>8. Viewing Results</h2>
+            <p>Once processing is complete, the results page displays all detected hook clips as cards.</p>
+
+            <h3>Clip Card Information</h3>
+            <p>Each clip card shows:</p>
+            <ul>
+                <li><strong>Title</strong> — AI-generated descriptive name for the hook.</li>
+                <li><strong>Score</strong> — Virality score from 0-100 (higher = more likely to go viral).</li>
+                <li><strong>Duration</strong> — Length of the clip in seconds.</li>
+                <li><strong>Timestamp</strong> — Start and end times in the original video.</li>
+                <li><strong>Reason</strong> — AI explanation of why this moment was selected.</li>
+                <li><strong>Video Preview</strong> — Inline video player to preview the clip.</li>
+            </ul>
+
+            <div class="tip">
+                <div class="label">💡 Tip</div>
+                <p>Clips are sorted by virality score (highest first). The best hooks appear at the top.</p>
+            </div>
+        </section>
+
+        <!-- 9. Customizing Clips -->
+        <section id="customize">
+            <h2>9. Customizing Clips</h2>
+
+            <h3>Re-Trimming Clips</h3>
+            <p>If the AI's timestamp selection isn't perfect, you can manually adjust the clip boundaries:</p>
+            <ol>
+                <li>Click the <strong>timeline editor icon</strong> on a clip card.</li>
+                <li>Drag the <strong>start and end handles</strong> to adjust boundaries.</li>
+                <li>Preview the adjustment in real-time.</li>
+                <li>Click <strong>"Apply"</strong> to re-trim with your custom timestamps.</li>
+            </ol>
+
+            <h3>Timeline Editor</h3>
+            <p>The timeline editor provides an intuitive visual interface for fine-tuning clip boundaries. Drag handles
+                on either end of the selection region to adjust start and end points. The current selection is
+                highlighted in purple, with timestamps displayed above.</p>
+        </section>
+
+        <!-- 10. Rendering Vertical Videos -->
+        <section id="vertical">
+            <h2>10. Rendering Vertical Videos</h2>
+            <p>Convert any clip to <strong>9:16 vertical format</strong> optimized for TikTok, Instagram Reels, and
+                YouTube Shorts.</p>
+
+            <h3>How to Render</h3>
+            <ol>
+                <li>Click the <strong>"Render Vertical"</strong> button on any clip card.</li>
+                <li>A style picker modal will appear with three subtitle options.</li>
+                <li>Select your preferred subtitle style.</li>
+                <li>Click <strong>"Render"</strong> to start processing.</li>
+                <li>The vertical version generates with face-tracking crop and subtitles.</li>
+                <li>Once complete, a download button appears for the vertical clip.</li>
+            </ol>
+
+            <h3>Subtitle Styles</h3>
+            <div class="style-grid">
+                <div class="style-card hormozi">
+                    <div class="preview">THIS IS <span class="highlight">BOLD</span></div>
+                    <h4>Hormozi</h4>
+                    <p>Bold white text, active word highlighted in yellow. Inspired by Alex Hormozi.</p>
+                </div>
+                <div class="style-card word-pop">
+                    <div class="preview" style="font-size:28px; letter-spacing: 4px;">POP</div>
+                    <h4>Word Pop</h4>
+                    <p>Words pop in one at a time with scale-up animation. Dynamic and energetic.</p>
+                </div>
+                <div class="style-card classic">
+                    <div class="preview">Standard subtitles</div>
+                    <h4>Classic</h4>
+                    <p>Clean bottom-positioned text. Professional and clean look.</p>
+                </div>
+            </div>
+
+            <h3>Face Tracking</h3>
+            <p>When rendering vertical videos, MediaPipe face detection locates the speaker's face and centers the 9:16
+                crop window on it, ensuring the speaker is always visible. If no face is detected, the crop defaults to
+                center position.</p>
+        </section>
+
+        <!-- 11. Downloading Clips -->
+        <section id="download">
+            <h2>11. Downloading Clips</h2>
+
+            <h3>Download Original Clip</h3>
+            <p>Click the <strong>"Download"</strong> button on any clip card to download the clip in its original
+                landscape format as an MP4 file.</p>
+
+            <h3>Download Vertical Clip</h3>
+            <p>After rendering a vertical version, click the <strong>"Download Vertical"</strong> button to download the
+                9:16 vertical clip with face-tracked cropping and burned-in subtitles.</p>
+
+            <h3>File Naming</h3>
+            <p>Clips are automatically named with the job ID and clip number (e.g., <code>abc123_clip_1.mp4</code>).
+                Vertical clips include a <code>_vertical</code> suffix.</p>
+        </section>
+
+        <!-- 12. Troubleshooting -->
+        <section id="troubleshooting">
+            <h2>12. Troubleshooting</h2>
+
+            <div class="trouble-card">
+                <div class="problem">❌ Video upload fails</div>
+                <div class="solution">Ensure the file is a supported format (MP4, MOV, AVI, MKV, WebM) and under 500 MB.
+                    Check that the backend server is running.</div>
+            </div>
+
+            <div class="trouble-card">
+                <div class="problem">❌ YouTube URL is rejected</div>
+                <div class="solution">Verify the URL is a valid YouTube link. Ensure the video is public and not
+                    age-restricted.</div>
+            </div>
+
+            <div class="trouble-card">
+                <div class="problem">❌ Processing stalls or hangs</div>
+                <div class="solution">Check that the Celery worker and Redis server are running. Look at the Celery
+                    worker terminal for error messages.</div>
+            </div>
+
+            <div class="trouble-card">
+                <div class="problem">❌ No hooks detected</div>
+                <div class="solution">Try a different AI provider. Some videos with minimal speech may not produce
+                    hooks. Ensure the video has clear audio.</div>
+            </div>
+
+            <div class="trouble-card">
+                <div class="problem">❌ Vertical render fails</div>
+                <div class="solution">Ensure FFmpeg is installed and up to date. Check that the clip exists and hasn't
+                    been deleted.</div>
+            </div>
+
+            <div class="trouble-card">
+                <div class="problem">❌ Worker crashes on macOS (SIGABRT)</div>
+                <div class="solution">Use <code>--pool=solo</code> when starting the Celery worker:
+                    <code>celery -A celery_app.celery worker --loglevel=info --pool=solo</code></div>
+            </div>
+
+            <div class="trouble-card">
+                <div class="problem">❌ ModuleNotFoundError in Celery</div>
+                <div class="solution">Start the Celery worker from the <code>backend/</code> directory. Clear
+                    <code>__pycache__</code> and restart the worker.</div>
+            </div>
+
+            <div class="trouble-card">
+                <div class="problem">❌ Ollama returns empty response</div>
+                <div class="solution">The transcript may exceed the model's context limit. The system auto-truncates,
+                    but very long videos may lose some content. Try a shorter video.</div>
+            </div>
+        </section>
+
+        <!-- 13. FAQ -->
+        <section id="faq">
+            <h2>13. Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    How long does processing take?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Typically 1-5 minutes depending on video length and your AI provider. Shorter videos (under 10
+                        minutes) process fastest.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Is my video stored permanently?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Videos and clips are stored on the server temporarily. They are not automatically deleted but are
+                        meant for session use. For production, configure cloud storage with retention policies.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Can I process multiple videos at once?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Yes! Each video gets its own job ID. You can submit multiple videos and track each one
+                        independently.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Which AI provider should I use?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>OpenAI offers the best quality. Gemini has a generous free tier. Ollama is best for privacy and
+                        offline use.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    What is Mock AI mode?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Mock AI mode skips actual AI processing and returns dummy data. Useful for testing the
+                        application without consuming API credits.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Can I use this commercially?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>The application is open-source. Ensure you comply with AI provider terms of service and respect
+                        copyright when processing third-party videos.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    Do subtitles support multiple languages?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Transcription supports the languages of the selected AI provider. OpenAI Whisper supports 90+
+                        languages.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">
+                    What video quality is output?
+                    <span class="chevron">▼</span>
+                </div>
+                <div class="faq-a">
+                    <p>Clips are encoded with H.264 video and AAC audio at CRF 23 (visually lossless). Vertical clips
+                        are output at 1080×1920 resolution.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <button class="back-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+
+</body>
+
+</html>
