@@ -126,6 +126,45 @@ def trim_all_clips(
     return hooks
 
 
+# Cached result for subtitle filter availability check
+_subtitle_filter_cache: str | None = None
+_subtitle_filter_checked: bool = False
+
+
+def _get_subtitle_filter() -> str | None:
+    """
+    Check which subtitle filter is available in FFmpeg.
+    Returns 'subtitles', 'ass', or None if neither is available.
+    Result is cached after the first check.
+    """
+    global _subtitle_filter_cache, _subtitle_filter_checked
+    if _subtitle_filter_checked:
+        return _subtitle_filter_cache
+
+    _subtitle_filter_checked = True
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-filters"],
+            capture_output=True, text=True, timeout=10,
+        )
+        filters_output = result.stdout
+        # Prefer 'subtitles' over 'ass' as it's more commonly available
+        if " subtitles " in filters_output:
+            _subtitle_filter_cache = "subtitles"
+        elif " ass " in filters_output:
+            _subtitle_filter_cache = "ass"
+        else:
+            _subtitle_filter_cache = None
+    except Exception:
+        _subtitle_filter_cache = None
+
+    if _subtitle_filter_cache:
+        logger.info(f"FFmpeg subtitle filter available: {_subtitle_filter_cache}")
+    else:
+        logger.warning("FFmpeg has no subtitle filter (ass/subtitles). libass not compiled.")
+
+    return _subtitle_filter_cache
+
 def trim_and_render_vertical(
     video_path: str,
     start_time: float,
@@ -189,9 +228,20 @@ def trim_and_render_vertical(
         ]
 
         if subtitle_path and os.path.exists(subtitle_path):
-            # Escape special characters in path for FFmpeg
-            safe_sub_path = subtitle_path.replace("\\", "/").replace(":", "\\:")
-            vf_parts.append(f"ass='{safe_sub_path}'")
+            # Check if FFmpeg has subtitle filter support (requires libass)
+            sub_filter = _get_subtitle_filter()
+            if sub_filter:
+                # Escape special FFmpeg filter chars: \ first, then others
+                safe_sub_path = subtitle_path
+                for ch in ["\\", "'", ":", ";", ",", "[", "]"]:
+                    safe_sub_path = safe_sub_path.replace(ch, f"\\{ch}")
+                vf_parts.append(f"{sub_filter}={safe_sub_path}")
+            else:
+                logger.warning(
+                    "FFmpeg missing libass (no 'ass' or 'subtitles' filter). "
+                    "Rendering vertical clip WITHOUT subtitles. "
+                    "Fix: brew reinstall ffmpeg  (or install with --enable-libass)"
+                )
 
         filter_str = ",".join(vf_parts)
 

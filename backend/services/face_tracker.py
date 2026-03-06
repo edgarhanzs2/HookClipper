@@ -1,15 +1,18 @@
 """
-Face tracking service using MediaPipe.
+Face tracking service using OpenCV.
 Detects and tracks the dominant face across video frames for smart vertical cropping.
+Uses OpenCV's built-in Haar cascade classifier for reliable face detection.
 """
 
 import logging
 from collections import deque
 
 import cv2
-import mediapipe as mp
 
 logger = logging.getLogger(__name__)
+
+# Load Haar cascade for face detection (ships with OpenCV)
+_CASCADE_PATH = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 
 
 def _smooth_coordinates(coords: list[dict], window_size: int = 15) -> list[dict]:
@@ -75,12 +78,10 @@ def track_faces(video_path: str, sample_every_n: int = 5) -> dict:
 
     logger.info(f"Face tracking: {total_frames} frames, {fps:.1f}fps, {width}x{height}, sample every {sample_every_n}")
 
-    # MediaPipe Face Detection
-    mp_face = mp.solutions.face_detection
-    face_detection = mp_face.FaceDetection(
-        model_selection=1,  # 1 = full-range model (works for faces far from camera)
-        min_detection_confidence=0.5,
-    )
+    # OpenCV Haar cascade face detector
+    face_cascade = cv2.CascadeClassifier(_CASCADE_PATH)
+    if face_cascade.empty():
+        raise RuntimeError(f"Failed to load Haar cascade from: {_CASCADE_PATH}")
 
     raw_coords = []
     faces_found = 0
@@ -92,22 +93,23 @@ def track_faces(video_path: str, sample_every_n: int = 5) -> dict:
             break
 
         if frame_num % sample_every_n == 0:
-            # Convert BGR to RGB for MediaPipe
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            results = face_detection.process(rgb_frame)
+            # Convert to grayscale for Haar cascade
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.1,
+                minNeighbors=5,
+                minSize=(30, 30),
+            )
 
-            if results.detections:
+            if len(faces) > 0:
                 # Pick the largest (most prominent) face
-                best_detection = max(
-                    results.detections,
-                    key=lambda d: d.location_data.relative_bounding_box.width
-                    * d.location_data.relative_bounding_box.height,
-                )
+                best = max(faces, key=lambda f: f[2] * f[3])
+                x, y, w, h = best
 
-                bbox = best_detection.location_data.relative_bounding_box
                 # Center of the bounding box (normalized 0-1)
-                cx = bbox.xmin + bbox.width / 2
-                cy = bbox.ymin + bbox.height / 2
+                cx = (x + w / 2) / width
+                cy = (y + h / 2) / height
 
                 raw_coords.append({
                     "frame": frame_num,
@@ -126,7 +128,6 @@ def track_faces(video_path: str, sample_every_n: int = 5) -> dict:
         frame_num += 1
 
     cap.release()
-    face_detection.close()
 
     # Fill in missing frames by repeating the nearest detected coord
     # (for frames we skipped via sample_every_n)

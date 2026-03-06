@@ -9,4 +9,3 @@ mlx-whisper
 celery[redis]
 yt-dlp
 opencv-python
-mediapipe
