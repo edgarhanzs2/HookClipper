@@ -438,6 +438,112 @@ async def download_vertical_clip(job_id: str, clip_id: int):
     )
 
 
+@app.post("/api/render-landscape-subs/{job_id}/{clip_id}")
+async def render_landscape_subs(job_id: str, clip_id: int, style: str = "hormozi"):
+    """Render a landscape clip with burned-in subtitles."""
+    if job_id not in jobs:
+        raise HTTPException(404, f"Job not found: {job_id}")
+
+    state = _get_task_state(job_id)
+
+    if state["status"] != "completed":
+        raise HTTPException(400, "Job is not completed yet")
+
+    clips = state.get("clips", [])
+    clip_index = clip_id - 1
+
+    if clip_index < 0 or clip_index >= len(clips):
+        raise HTTPException(404, f"Clip not found: {clip_id}")
+
+    clip = clips[clip_index]
+    video_path = state.get("video_path") or jobs[job_id].get("video_path")
+    transcript = state.get("transcript", {})
+
+    if not video_path or not os.path.exists(video_path):
+        raise HTTPException(404, "Original video file not found")
+
+    valid_styles = ["hormozi", "word_pop", "classic"]
+    if style not in valid_styles:
+        raise HTTPException(400, f"Invalid style: {style}. Available: {valid_styles}")
+
+    logger.info(f"[{job_id}] Rendering landscape clip {clip_id} with subtitles, style '{style}'")
+
+    try:
+        import subprocess
+        from services.subtitle_engine import generate_subtitles
+        from services.trimmer import trim_and_render_landscape_subs
+
+        # Detect source video dimensions for subtitle sizing
+        video_width, video_height = 1920, 1080  # sensible landscape defaults
+        try:
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-select_streams", "v:0",
+                 "-show_entries", "stream=width,height", "-of", "csv=p=0",
+                 video_path],
+                capture_output=True, text=True, timeout=10,
+            )
+            if probe.returncode == 0 and probe.stdout.strip():
+                parts = probe.stdout.strip().split(",")
+                video_width, video_height = int(parts[0]), int(parts[1])
+        except Exception:
+            logger.warning(f"[{job_id}] Could not detect video dimensions, using defaults")
+
+        # Generate subtitles sized for landscape resolution
+        job_output_dir = str(OUTPUT_DIR / job_id)
+        os.makedirs(job_output_dir, exist_ok=True)
+        subtitle_path = os.path.join(job_output_dir, f"clip_{clip_id}_landscape_subs.ass")
+
+        generate_subtitles(
+            transcript=transcript,
+            style=style,
+            output_path=subtitle_path,
+            clip_start=clip["start_time"],
+            clip_end=clip["end_time"],
+            video_width=video_width,
+            video_height=video_height,
+        )
+
+        # Render landscape clip with subtitles
+        output_path = os.path.join(job_output_dir, f"clip_{clip_id}_landscape_subs.mp4")
+
+        trim_and_render_landscape_subs(
+            video_path=video_path,
+            start_time=clip["start_time"],
+            end_time=clip["end_time"],
+            subtitle_path=subtitle_path,
+            output_path=output_path,
+        )
+
+        return {
+            "job_id": job_id,
+            "clip_id": clip_id,
+            "style": style,
+            "download_url": f"/api/download-landscape-subs/{job_id}/{clip_id}",
+            "status": "rendered",
+        }
+
+    except Exception as e:
+        logger.error(f"[{job_id}] Landscape subtitle render failed: {e}")
+        raise HTTPException(500, f"Landscape subtitle render failed: {str(e)}")
+
+
+@app.get("/api/download-landscape-subs/{job_id}/{clip_id}")
+async def download_landscape_subs_clip(job_id: str, clip_id: int):
+    """Download the landscape version of a clip with burned-in subtitles."""
+    if job_id not in jobs:
+        raise HTTPException(404, f"Job not found: {job_id}")
+
+    subs_path = OUTPUT_DIR / job_id / f"clip_{clip_id}_landscape_subs.mp4"
+    if not subs_path.exists():
+        raise HTTPException(404, "Landscape subtitled clip not found. Render it first.")
+
+    return FileResponse(
+        path=str(subs_path),
+        media_type="video/mp4",
+        filename=f"hook_clip_{clip_id}_subtitled.mp4",
+    )
+
+
 @app.get("/api/download/{job_id}/{clip_id}")
 async def download_clip(job_id: str, clip_id: int):
     """Download a specific clip."""

@@ -53,28 +53,35 @@ def _group_words_into_lines(words: list[dict], max_words_per_line: int = 4) -> l
 def _ass_header(style: str, video_width: int = 1080, video_height: int = 1920) -> str:
     """Generate the ASS file header with style definitions."""
 
+    # Scale font sizes relative to the 1920-tall baseline (vertical)
+    # For landscape videos, fonts need to be smaller since the video height is less
+    scale = video_height / 1920.0
+
     if style == "hormozi":
         # Bold white text, large, center-bottom, with black outline
+        font_size = int(72 * scale)
         style_line = (
-            "Style: Default,Arial,72,&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,"
+            f"Style: Default,Arial,{font_size},&H00FFFFFF,&H0000FFFF,&H00000000,&H80000000,"
             "1,0,0,0,100,100,0,0,1,4,2,2,10,10,40,1"
         )
         # Active word highlight style — yellow text
         highlight_line = (
-            "Style: Highlight,Arial,72,&H0000FFFF,&H000000FF,&H00000000,&H80000000,"
+            f"Style: Highlight,Arial,{font_size},&H0000FFFF,&H000000FF,&H00000000,&H80000000,"
             "1,0,0,0,100,100,0,0,1,4,2,2,10,10,40,1"
         )
     elif style == "word_pop":
         # Clean white text, slightly smaller for pop effect
+        font_size = int(64 * scale)
         style_line = (
-            "Style: Default,Arial,64,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
+            f"Style: Default,Arial,{font_size},&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,"
             "1,0,0,0,100,100,0,0,1,3,1,2,10,10,50,1"
         )
         highlight_line = ""
     else:  # classic
         # Standard bottom-center white subtitles
+        font_size = int(56 * scale)
         style_line = (
-            "Style: Default,Arial,56,&H00FFFFFF,&H00FFFFFF,&H00000000,&HA0000000,"
+            f"Style: Default,Arial,{font_size},&H00FFFFFF,&H00FFFFFF,&H00000000,&HA0000000,"
             "0,0,0,0,100,100,0,0,1,3,0,2,10,10,30,1"
         )
         highlight_line = ""
@@ -177,6 +184,8 @@ def generate_subtitles(
     output_path: str = "subtitles.ass",
     clip_start: float = 0.0,
     clip_end: float = None,
+    video_width: int = 1080,
+    video_height: int = 1920,
 ) -> str:
     """
     Generate an .ass subtitle file from a transcript with word-level timestamps.
@@ -187,6 +196,8 @@ def generate_subtitles(
         output_path: Path to save the .ass file
         clip_start: Start time offset (to align subs with a trimmed clip)
         clip_end: End time (to filter words outside the clip range)
+        video_width: Video width for subtitle positioning (default 1080 for vertical)
+        video_height: Video height for subtitle positioning (default 1920 for vertical)
 
     Returns:
         Path to the generated .ass file
@@ -238,7 +249,7 @@ def generate_subtitles(
     logger.info(f"Generating {style} subtitles: {len(words)} words -> {len(lines)} lines")
 
     # Generate ASS content
-    header = _ass_header(style)
+    header = _ass_header(style, video_width=video_width, video_height=video_height)
 
     if style == "hormozi":
         events = _generate_hormozi(lines)

@@ -4,11 +4,14 @@ import { useState } from 'react';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+export type RenderMode = 'vertical' | 'landscape';
+
 interface StylePickerModalProps {
     isOpen: boolean;
     onClose: () => void;
     jobId: string;
     clipId: number;
+    mode?: RenderMode;
 }
 
 const STYLES = [
@@ -43,6 +46,7 @@ export default function StylePickerModal({
     onClose,
     jobId,
     clipId,
+    mode = 'vertical',
 }: StylePickerModalProps) {
     const [selectedStyle, setSelectedStyle] = useState<string | null>(null);
     const [rendering, setRendering] = useState(false);
@@ -50,6 +54,11 @@ export default function StylePickerModal({
     const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
+
+    const isLandscape = mode === 'landscape';
+    const apiEndpoint = isLandscape
+        ? `${API_BASE}/api/render-landscape-subs/${jobId}/${clipId}`
+        : `${API_BASE}/api/render-vertical/${jobId}/${clipId}`;
 
     const handleRender = async (styleId: string) => {
         setSelectedStyle(styleId);
@@ -59,7 +68,7 @@ export default function StylePickerModal({
 
         try {
             const res = await fetch(
-                `${API_BASE}/api/render-vertical/${jobId}/${clipId}?style=${styleId}`,
+                `${apiEndpoint}?style=${styleId}`,
                 { method: 'POST' }
             );
 
@@ -74,7 +83,7 @@ export default function StylePickerModal({
                 style: styleId,
             });
         } catch (err: any) {
-            setError(err.message || 'Failed to render vertical clip');
+            setError(err.message || 'Failed to render clip');
         } finally {
             setRendering(false);
         }
@@ -87,6 +96,17 @@ export default function StylePickerModal({
         setError(null);
         onClose();
     };
+
+    const modalTitle = isLandscape ? '🎬 Download with Subtitles' : '🎬 Render Vertical Clip';
+    const modalSubtitle = isLandscape
+        ? 'Choose a subtitle style for your landscape clip'
+        : 'Choose a subtitle style for your 9:16 clip';
+    const downloadLabel = isLandscape
+        ? 'Download Subtitled Clip'
+        : 'Download Vertical Clip (9:16)';
+    const downloadFilename = isLandscape
+        ? `hook_clip_${clipId}_subtitled.mp4`
+        : `hook_clip_${clipId}_vertical.mp4`;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -108,10 +128,10 @@ export default function StylePickerModal({
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h2 className="text-lg font-bold text-[var(--color-foreground)]">
-                            🎬 Render Vertical Clip
+                            {modalTitle}
                         </h2>
                         <p className="text-xs text-[var(--color-foreground)]/40 mt-1">
-                            Choose a subtitle style for your 9:16 clip
+                            {modalSubtitle}
                         </p>
                     </div>
                     <button
@@ -140,8 +160,8 @@ export default function StylePickerModal({
                             onClick={() => handleRender(style.id)}
                             disabled={rendering}
                             className={`w-full text-left p-4 rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed ${selectedStyle === style.id
-                                    ? 'ring-2 ring-[var(--color-primary)]'
-                                    : ''
+                                ? 'ring-2 ring-[var(--color-primary)]'
+                                : ''
                                 }`}
                             style={{
                                 background:
@@ -211,7 +231,7 @@ export default function StylePickerModal({
                 {result && (
                     <a
                         href={result.downloadUrl}
-                        download={`hook_clip_${clipId}_vertical.mp4`}
+                        download={downloadFilename}
                         className="w-full py-3 rounded-xl text-sm font-bold text-white transition-all duration-300 hover:brightness-110 active:scale-[0.98] flex items-center justify-center gap-2 no-underline animate-fade-in"
                         style={{
                             background: 'linear-gradient(135deg, #10b981, #059669)',
@@ -230,7 +250,7 @@ export default function StylePickerModal({
                             <polyline points="7 10 12 15 17 10" />
                             <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
-                        Download Vertical Clip (9:16)
+                        {downloadLabel}
                     </a>
                 )}
             </div>

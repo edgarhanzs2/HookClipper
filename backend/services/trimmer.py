@@ -280,3 +280,94 @@ def trim_and_render_vertical(
             os.remove(temp_trimmed)
         except Exception:
             pass
+
+
+def trim_and_render_landscape_subs(
+    video_path: str,
+    start_time: float,
+    end_time: float,
+    subtitle_path: str,
+    output_path: str,
+) -> str:
+    """
+    Trim a clip and burn in subtitles at the original landscape resolution.
+    No cropping or scaling is applied.
+
+    Args:
+        video_path: Path to the source video
+        start_time: Clip start time in seconds
+        end_time: Clip end time in seconds
+        subtitle_path: Path to the .ass subtitle file
+        output_path: Path for the final clip with subtitles
+
+    Returns:
+        Path to the rendered clip
+    """
+    import tempfile
+
+    # Step 1: Trim the clip from the source video
+    temp_trimmed = tempfile.mktemp(suffix="_trimmed.mp4")
+    try:
+        logger.info(f"Landscape subs render: trimming {start_time:.1f}s - {end_time:.1f}s")
+        trim_clip(video_path, start_time, end_time, temp_trimmed)
+
+        # Step 2: Burn in subtitles
+        vf_parts = []
+
+        if subtitle_path and os.path.exists(subtitle_path):
+            sub_filter = _get_subtitle_filter()
+            if sub_filter:
+                safe_sub_path = subtitle_path
+                for ch in ["\\", "'", ":", ";", ",", "[", "]"]:
+                    safe_sub_path = safe_sub_path.replace(ch, f"\\{ch}")
+                vf_parts.append(f"{sub_filter}={safe_sub_path}")
+            else:
+                logger.warning(
+                    "FFmpeg missing libass — rendering landscape clip WITHOUT subtitles."
+                )
+
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        if vf_parts:
+            filter_str = ",".join(vf_parts)
+            cmd = [
+                "ffmpeg",
+                "-i", temp_trimmed,
+                "-vf", filter_str,
+                "-c:v", "libx264",
+                "-c:a", "aac",
+                "-preset", "fast",
+                "-crf", "23",
+                "-y",
+                output_path,
+            ]
+        else:
+            # No subtitle filter available — just copy the trimmed clip
+            cmd = [
+                "ffmpeg",
+                "-i", temp_trimmed,
+                "-c", "copy",
+                "-y",
+                output_path,
+            ]
+
+        logger.info(f"Landscape subs render: subtitles → {output_path}")
+
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        if result.returncode != 0:
+            logger.error(f"FFmpeg landscape subs render error: {result.stderr[-500:]}")
+            raise RuntimeError("FFmpeg landscape subtitle render failed")
+
+        if not os.path.exists(output_path):
+            raise RuntimeError("Landscape subtitle render produced no output file")
+
+        file_size_mb = os.path.getsize(output_path) / (1024 * 1024)
+        logger.info(f"Landscape subs render complete: {output_path} ({file_size_mb:.1f}MB)")
+
+        return output_path
+
+    finally:
+        try:
+            os.remove(temp_trimmed)
+        except Exception:
+            pass
