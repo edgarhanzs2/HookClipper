@@ -217,7 +217,7 @@ export default function Home() {
                       }}
                     >
                       <option value="openai">🤖 GPT-4o</option>
-                      <option value="gemini">✨ Gemini 1.5 Flash</option>
+                      <option value="gemini">✨ Gemini 2.0 Flash</option>
                       <option value="ollama">🦙 Local AI (Ollama)</option>
                     </select>
                     <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">

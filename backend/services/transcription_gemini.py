@@ -64,7 +64,7 @@ Timestamps should be in seconds as floats.
 duration should be the total length of the audio in seconds."""
 
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-2.0-flash",
         contents=[
             types.Part.from_uri(file_uri=uploaded.uri, mime_type="audio/mpeg"),
             prompt,
